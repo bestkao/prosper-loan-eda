@@ -147,7 +147,7 @@ this class and submit the the Rmd file and html file. You'll need the
 knitr package to do that so let's install that now. Run these two lines
 of code.
 ```{r}
-install.packages('knitr', dependencies = T)
+#install.packages('knitr', dependencies = T)
 library(knitr)
 ```
 

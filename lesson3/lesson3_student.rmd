@@ -33,7 +33,10 @@ names(pf)
 # qplot(x=dob_day, data=pf) +
 #   scale_x_discrete(breaks=1:31)
 
-# theme_set(theme_fivethirtyeight(12))
+# install.packages('ggthemes', dependencies = TRUE)
+library(ggthemes)
+theme_set(theme_economist(12))
+
 ggplot(aes(x = dob_day), data = pf) + 
   geom_histogram() + 
   scale_x_discrete(breaks = 1:31)

@@ -58,7 +58,7 @@ ggplot(aes(x=price/carat), data=diamonds) +
   ylab('Number of diamonds for given carat and cut')
 
 # Price boxplots by cut, clarity, and color
-library('gridExtra')
+library(gridExtra)
 p1 <- ggplot(aes(x=factor(cut), y=price), data=diamonds) +
   geom_boxplot()
 p2 <- ggplot(aes(x=factor(clarity), y=price), data=diamonds) +
@@ -81,3 +81,145 @@ ggplot(aes(x=carat), data=diamonds) +
                      breaks=seq(0,2,.1)) +
   scale_y_continuous(limits=c(0,3000),
                      breaks=seq(500,3000,500))
+
+#-------------------------------------------------------------------------------
+## Data Wrangling with R
+
+# extra datasets
+# install.packages('devtools')
+# devtools::install_github('rstudio/EDAWR')
+library(EDAWR)
+?storms
+?cases
+?pollution
+?tb
+
+storms$storm
+storms$wind
+storms$pressure
+storms$date
+
+cases$country
+names(cases)[-1]
+unlist(cases[1:3, 2:4])
+
+storms$pressure / storms$wind
+
+# Reshaping layouts of tables
+# install.packages('tidyr')
+library(tidyr)
+?gather
+?spread
+
+# make observations from variables
+cases
+gather(cases, 'year', 'n', 2:4)
+
+# make variables from observations
+pollution
+spread(pollution, 'size', 'amount')
+
+# split columns
+storms
+storms2 <- separate(storms, date, c('year', 'month', 'day'), sep='-')
+
+# merge columns
+unite(storms2, 'date', year, month, day, sep='-')
+
+# install.packages('dplyr')
+library(dplyr)
+?select
+?filter
+?arrange
+?mutate
+?summarise
+?group_by
+
+# install.packages('nycflights13')
+library(nycflights13)
+?airlines
+?airports
+?flights
+?planes
+?weather
+
+# extract existing variables
+storms
+select(storms, storm, pressure)
+select(storms, -storm)
+select(storms, wind:date)
+
+# extract existing observations
+filter(storms, wind >= 50)
+filter(storms, wind >= 50, storm %in% c('Alberto', 'Alex', 'Allison'))
+
+# derive new variables (from existing variables)
+mutate(storms, ratio=pressure/wind, inverse=ratio^-1)
+
+# change the unit of analysis
+pollution %>% summarize(median=median(amount), variance=var(amount))
+pollution %>% summarize(mean=mean(amount), sum=sum(amount), n=n())
+
+# sort
+arrange(storms, wind)
+arrange(storms, desc(wind))
+arrange(storms, wind, date) # by wind, then by date
+
+# Pipe operator
+tb
+select(tb, child:elderly)
+tb %>% select(child:elderly)
+filter(storms, wind >= 50)
+storms %>% filter(wind >= 50)
+storms %>% filter(wind >= 50) %>% select(storm, pressure)
+storms %>% mutate(ratio=pressure/wind) %>% select(storm, ratio)
+
+# Unit of Analysis
+pollution %>% group_by(city) %>% summarize(mean=mean(amount),
+                                           sum=sum(amount), n=n())
+pollution %>% group_by(size) %>% summarize(mean=mean(amount))
+pollution %>% ungroup()
+
+tb
+tb %>% group_by(country, year)
+# Cases by country, year
+tb %>% group_by(country, year) %>%
+  summarise(cases=sum(child, adult, elderly, na.rm=TRUE))
+# Cases by country
+tb %>% group_by(country, year) %>%
+  summarise(cases=sum(child, adult, elderly, na.rm=TRUE)) %>%
+  summarise(cases=sum(cases, na.rm=TRUE))
+# Total cases
+tb %>% group_by(country, year) %>%
+  summarise(cases=sum(child, adult, elderly, na.rm=TRUE)) %>%
+  summarise(cases=sum(cases, na.rm=TRUE)) %>%
+  summarise(cases=sum(cases, na.rm=TRUE))
+
+# Joining data
+y
+z
+bind_cols(y, z)
+bind_rows(y, z)
+union(y, z)
+intersect(y, z)
+setdiff(y, z)
+
+songs
+artists
+left_join(songs, artists, by='name')
+
+songs2
+artists2
+left_join(songs2, artists2, by=c('first', 'last'))
+
+left_join(songs, artists, by='name')
+inner_join(songs, artists, by='name')
+semi_join(songs, artists, by='name')
+anti_join(songs, artists, by='name')
+#-------------------------------------------------------------------------------
+# install.packages('XLConnect', dependencies=TRUE)
+library(XLConnect)
+pg <- readWorksheetFromFile('patent-grants.xlsx',
+                            sheet=1, header=TRUE)
+head(pg)
+str(pg)

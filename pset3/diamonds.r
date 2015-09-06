@@ -82,6 +82,7 @@ ggplot(aes(x=carat), data=diamonds) +
   scale_y_continuous(limits=c(0,3000),
                      breaks=seq(500,3000,500))
 
+
 #-------------------------------------------------------------------------------
 ## Data Wrangling with R
 
@@ -122,6 +123,7 @@ spread(pollution, 'size', 'amount')
 # split columns
 storms
 storms2 <- separate(storms, date, c('year', 'month', 'day'), sep='-')
+storms2
 
 # merge columns
 unite(storms2, 'date', year, month, day, sep='-')
@@ -217,9 +219,45 @@ inner_join(songs, artists, by='name')
 semi_join(songs, artists, by='name')
 anti_join(songs, artists, by='name')
 #-------------------------------------------------------------------------------
+
+
+## Wrangling Gapminder Data
+
 # install.packages('XLConnect', dependencies=TRUE)
 library(XLConnect)
 pg <- readWorksheetFromFile('patent-grants.xlsx',
                             sheet=1, header=TRUE)
-head(pg)
-str(pg)
+
+# convert colnames to numeric years
+names(pg)[2:20] <- as.numeric(substring(names(pg)[2:20], 2))
+names(pg)[1] <- 'country'
+# gather by counts by year
+pgByYear <- gather(pg, 'year', 'count', 2:20)
+# convert patent counts to numerics
+pgByYear$count <- as.numeric(pgByYear$count)
+
+
+## Investigating the Gapminder data
+
+# Histogram of Patents Granted by Year
+ggplot(aes(x=year, y=count), data=pgByYear) +
+  geom_histogram(color='black', fill='#099DD9', stat='identity') +
+  scale_x_discrete(breaks=seq(1984, 2002, 2)) +
+  xlab('Year') +
+  ylab('Number of Patents')
+ggsave('patent-histogram.png')
+
+# Histogram of Patents Granted by Year Faceted by Country
+ggplot(aes(x=year, y=count), data=pgByYear) +
+  facet_wrap(~country) +
+  geom_histogram(color='black', fill='#099DD9', stat='identity') +
+  scale_x_discrete(breaks=seq(1984, 2002, 2))
+ggsave('country-patent-histogram.png')
+
+# Frequency Polygon of Patents Granted by Year Faceted by Country
+ggplot(aes(x=year, y=count, group=country, color=country), data=pgByYear) +
+  geom_freqpoly(stat='identity') +
+  scale_x_discrete(breaks=seq(1984, 2002, 2)) +
+  xlab('Year') +
+  ylab('Number of Patents')
+ggsave('country-patent-frequency-polygon.png')

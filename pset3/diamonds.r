@@ -261,3 +261,51 @@ ggplot(aes(x=year, y=count, group=country, color=country), data=pgByYear) +
   xlab('Year') +
   ylab('Number of Patents')
 ggsave('country-patent-frequency-polygon.png')
+#-------------------------------------------------------------------------------
+
+
+## Anonymized Facebook Birthdays For My Friends
+bd <- read.csv('friends-birthdays.csv')
+bd$DOB <- as.Date(as.character(bd$DOB), '%Y%m%d')
+bd <- separate(bd, DOB, c('year', 'month', 'day'), sep='-')
+
+# How many people share your birthday? Do you know them?
+# (Reserve time with them or save money to buy them a gift!)
+nrow(bd[bd$month=='01' & bd$day=='28',])
+# 1 Person
+
+# Which month contains the most number of birthdays?
+# How many birthdays are in each month?
+bd %>% group_by(month) %>%
+  summarise(cases=length(month))
+# Jan  = 28 (most birthdays)
+# Feb  = 15
+# Mar  = 21
+# Apr  = 24
+# May  = 20
+# June = 22
+# July = 18
+# Aug  = 17
+# Sept = 22
+# Oct  = 19
+# Nov  = 17
+# Dec  = 21
+
+# Which day of the year has the most number of birthdays?
+days <- bd %>% group_by(month, day) %>%
+  summarise(cases=length(month))
+days[days$cases==max(days$cases),]
+# The following eigh days have highest number of birthdays (3):
+# 01-23
+# 01-31
+# 02-20
+# 04-19
+# 06-08
+# 06-23
+# 07-09
+# 08-26
+
+# Do you have at least 365 friends that have birthdays on everyday
+# of the year?
+days
+# Nope, ie. no birthday on 01-07

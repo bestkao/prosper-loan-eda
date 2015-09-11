@@ -1,4 +1,4 @@
-setwd('~/Dropbox/Projects/da/eda/lesson4/')
+setwd('~/Dropbox/Projects/da/eda/pset4/')
 library(ggthemes)
 theme_set(theme_fivethirtyeight(12))
 
@@ -73,3 +73,52 @@ p2 <- ggplot(aes(color, mean_price), data=diamonds_mp_by_color) +
 grid.arrange(p1, p2)
 # Diamonds with less clarity and worse colors
 # seem to be surprisingly more expensive.
+#-------------------------------------------------------------------------------
+
+
+## Gapminder Revisited
+
+# install.packages('XLConnect', dependencies=TRUE)
+library(XLConnect)
+mc <- readWorksheetFromFile('market-cap.xlsx',
+                            sheet=1, header=TRUE)
+
+# convert colnames to numeric years
+names(mc)[2:22] <- as.numeric(substring(names(mc)[2:22], 2))
+names(mc)[1] <- 'country'
+# gather by counts by year
+library(tidyr)
+mcByYear <- gather(mc, 'year', 'percentages', 2:22)
+# convert patent counts to numerics
+mcByYear$percentages <- as.numeric(mcByYear$percentages)
+
+
+## Investigating the Gapminder data
+
+# Scatterplot of market cap of listed global companies by year
+p1 <- ggplot(aes(x=year, y=percentages), data=mcByYear) +
+  geom_point(alpha=0.5,
+             position=position_jitter(h=0),
+             color='#099DD9') +
+  scale_x_discrete(breaks=seq(1988, 2008, 2)) +
+  # filter top 5% percentages
+  ylim(0, quantile(mcByYear$percentages, .95, na.rm=TRUE)) +
+  geom_line(aes(group=1), stat='summary', fun.y=mean) +
+  geom_smooth(aes(group=1)) +
+  xlab('Year') +
+  ylab('Market capitalization of listed companies (% of GDP)')
+# ggsave('market-cap.png')
+
+# US market caps for comparison
+p2 <- ggplot(aes(x=as.integer(year), y=percentages),
+       data=subset(mcByYear, country=='United States')) +
+  geom_line()
+
+# UK market caps for comparison
+p3 <- ggplot(aes(x=as.integer(year), y=percentages),
+             data=subset(mcByYear, country=='United Kingdom')) +
+  geom_line()
+
+library(gridExtra)
+grid.arrange(p1, p2, p3)
+ggsave('market-caps.png')

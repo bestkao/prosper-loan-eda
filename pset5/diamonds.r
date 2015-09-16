@@ -1,4 +1,3 @@
-getwd()
 setwd('/Users/James/Dropbox/Projects/da/eda/pset5')
 library(ggplot2)
 library(ggthemes)

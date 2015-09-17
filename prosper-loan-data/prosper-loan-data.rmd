@@ -1,4 +1,4 @@
-### Exploratory Data Analysis of Prosper Loan Data
+### Exploring Prosper Loan Data
 
 This data set contains 113,937 loans
 with 81 variables on each loan, including:
@@ -11,16 +11,225 @@ with 81 variables on each loan, including:
 - the latest payment information
 among others.
 
-Data last updated 03/11/2014
+Data collected until 03/11/2014
 ========================================================
 
-```{r Setting environment}
-setwd('~/Dropbox/Projects/da/eda/prosper-loan-data')
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
 library(ggplot2)
 library(ggthemes)
-theme_set(theme_fivethirtyeight(12))
+library(dplyr)
+theme_set(theme_minimal(12))
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+setwd('~/Dropbox/Projects/da/eda/prosper-loan-data/')
 
 prosper <- read.csv('prosper-loan-data.csv')
 str(prosper)
+
+defs <- read.csv('variable-definitions.csv')
 ```
+
+# Univariate Plots Section
+```{r echo=FALSE, Univariate_Plots}
+# Formatting dates
+prosper$LoanOriginationDate <- prosper$LoanOriginationDate %>%
+  as.Date(format = '%Y-%m-%d')
+
+
+# Number of Loans by Year, Grouped by Loan Status
+prosper$LoanOriginationDate.year <-
+  prosper$LoanOriginationDate %>% format('%Y')
+ggplot(prosper, aes(LoanOriginationDate.year)) +
+  geom_histogram(aes(fill = prosper$LoanStatus)) +
+  ggtitle('Number of Loans by Year') +
+  xlab('Year') +
+  ylab('Number of Loans')
+
+
+# Number of Loans by Month
+months <- c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+prosper$LoanOriginationDate.month <- prosper$LoanOriginationDate %>%
+  format('%b')
+prosper$LoanOriginationDate.month <- factor(prosper$LoanOriginationDate.month,
+                                            months)
+ggplot(prosper, aes(LoanOriginationDate.month)) +
+  geom_histogram(fill = '#007EE5') +
+  facet_wrap(~LoanOriginationDate.year) +
+  ggtitle('Number of Loans by Month') +
+  xlab('Month') +
+  ylab('Number of Loans')
+
+
+# Number of Loans by Day of the Month
+prosper$LoanOriginationDate.day <- prosper$LoanOriginationDate %>%
+  format('%d')
+ggplot(prosper, aes(LoanOriginationDate.day)) +
+  geom_histogram(fill = '#00B488') +
+  scale_x_discrete(breaks = seq(1, 31, 2)) +
+  facet_wrap(~LoanOriginationDate.month) +
+  ggtitle('Number of Loans by Day of the Month') +
+  xlab('Day of the Month') +
+  ylab('Number of Loans')
+
+# Number of Loans by State, Grouped by Term
+prosper$Term.f <- as.factor(prosper$Term)
+ggplot(prosper, aes(BorrowerState)) +
+  geom_histogram(aes(fill = prosper$Term.f)) +
+  ggtitle('Number of Loans by State') +
+  xlab('State') +
+  ylab('Number of Loans')
+
+
+
+
+summary(prosper$CreditGrade)
+ggplot(subset(prosper, !is.na(CreditGrade)), aes(CreditGrade)) + 
+  geom_histogram()
+
+summary(prosper$LoanOriginalAmount)
+ggplot(prosper, aes(LoanOriginalAmount)) + 
+  geom_histogram()
+
+summary(prosper$BorrowerRate)
+ggplot(prosper, aes(BorrowerRate)) + 
+  geom_histogram() +
+  facet_wrap(~EmploymentStatus)
+
+# LoanStatus
+
+summary(prosper$StatedMonthlyIncome)
+ggplot(prosper, aes(StatedMonthlyIncome)) + 
+  xlim(0, quantile(prosper$StatedMonthlyIncome, 0.99)) +
+  geom_histogram()
+
+# EmploymentStatus
+
+summary(prosper$MonthlyLoanPayment)
+ggplot(prosper, aes(MonthlyLoanPayment)) + 
+  xlim(0, quantile(prosper$MonthlyLoanPayment, 0.99)) +
+  geom_histogram()
+
+```
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+### What is/are the main feature(s) of interest in your dataset?
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+
+### Did you create any new variables from existing variables in the dataset?
+
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+
+
+
+# Bivariate Plots Section
+```{r echo=FALSE, Bivariate_Plots}
+# Borrowed Amount by Month, Faceted by Year
+ggplot(prosper, aes(LoanOriginationDate.month, LoanOriginalAmount)) +
+  geom_bar(stat = 'identity', fill = '#007EE5') +
+  facet_wrap(~LoanOriginationDate.year) +
+  ggtitle('Amount Borrowed by Month') +
+  xlab('Month') +
+  ylab('Amount Borrowed ($USD)')
+
+
+# Amount Borrowed over Time by Term
+prosper$Term.f <- as.factor(prosper$Term)
+ggplot(prosper, aes(LoanOriginationDate, LoanOriginalAmount, color = Term.f)) +
+  geom_point(alpha = 1/50, position = 'jitter') +
+  ggtitle('Amount Borrowed Over Time') +
+  xlab('Year') +
+  ylab('Amount Borrowed ($USD)')
+
+
+# Amount Borrowed over Time w/ Mean Trendline
+prosper$age_with_months <- with(prosper, 2015 - LoanOriginationDate.year + (1 - LoanOriginationDate.year / 12))
+prosper.loan_amt_by_age_months <- prosper %>%
+  group_by(age_with_months) %>%
+  summarize(friend_count_mean = mean(friend_count),
+            friend_count_median = median(friend_count),
+            n = n()) %>%
+  arrange(age_with_months)
+
+ggplot(prosper, aes(LoanOriginationDate, LoanOriginalAmount)) +
+  geom_point(alpha = 1/50, position = 'jitter') +
+  geom_line(stat = 'summary', fun.y = mean, color = '#00B488') +
+  ggtitle('Amount Borrowed Over Time') +
+  xlab('Year') +
+  ylab('Amount Borrowed ($USD)')
+
+ggplot(prosper, aes(LoanOriginalAmount, Investors)) +
+  geom_point(alpha = 1/50,
+             aes(color = prosper$Term.f),
+             position = 'jitter')
+```
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+### What was the strongest relationship you found?
+
+
+
+
+# Multivariate Plots Section
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+
+### Were there any interesting or surprising interactions between features?
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+```
+
+### Description One
+
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+```
+
+### Description Two
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+```
+
+### Description Three
+
+------
+
+# Reflection
 

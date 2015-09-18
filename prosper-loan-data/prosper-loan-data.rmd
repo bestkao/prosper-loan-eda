@@ -33,6 +33,7 @@ theme_set(theme_minimal(12))
 setwd('~/Dropbox/Projects/da/eda/prosper-loan-data/')
 
 prosper <- read.csv('prosper-loan-data.csv')
+summary(prosper)
 str(prosper)
 
 defs <- read.csv('variable-definitions.csv')
@@ -40,22 +41,63 @@ defs <- read.csv('variable-definitions.csv')
 
 # Univariate Plots Section
 ```{r echo=FALSE, Univariate_Plots}
+# Histogram of Investors Per Loan
+ggplot(prosper, aes(Investors)) +
+  scale_x_log10() +
+  geom_histogram(color = 'black', fill = '#007EE5') +
+  ggtitle('Number of Loans by Investor Count') +
+  xlab('Number of Investors') +
+  ylab('Number of Loans')
+
+
+# Histogram of Loans by Propser Rating
+ggplot(prosper, aes(prosper$ProsperRating..Alpha)) +
+  geom_histogram(aes(fill = prosper$ProsperRating..Alpha)) +
+  ggtitle('Number of Loans by Prosper Rating') +
+  xlab('Prosper Rating') +
+  ylab('Number of Loans')
+
+
+# Histogram of Loan Terms by Year
+categories <- c('Not Available', 'Debt Consolidation', 'Home Improvement',
+                'Business', 'Personal Loan', 'Student Use', 'Auto', 'Other',
+                'Baby&Adoption', 'Boat', 'Cosmetic Procedure', 'Engagement Ring',
+                'Green Loans', 'Household Expenses', 'Large Purchases',
+                'Medical/Dental', 'Motorcycle', 'RV', 'Taxes', 'Vacation',
+                'Wedding Loans')
+prosper$ListingCategory <- prosper$ListingCategory..numeric %>%
+  as.factor() %>%
+  factor(labels = categories)
+ggplot(prosper, aes(ListingCategory)) +
+  geom_histogram(aes(fill = ListingCategory)) +
+  ggtitle('Number of Loans by Category') +
+  xlab('Category') +
+  ylab('Number of Loans')
+
+
 # Formatting dates
 prosper$LoanOriginationDate <- prosper$LoanOriginationDate %>%
   as.Date(format = '%Y-%m-%d')
 
 
-# Number of Loans by Year, Grouped by Loan Status
+# Number of Loans by Year, Grouped by Loan Category
 prosper$LoanOriginationDate.year <-
   prosper$LoanOriginationDate %>% format('%Y')
 ggplot(prosper, aes(LoanOriginationDate.year)) +
-  geom_histogram(aes(fill = prosper$LoanStatus)) +
+  geom_histogram(color = 'black', aes(fill = prosper$ListingCategory)) +
+  ggtitle('Number of Loans by Year') +
+  xlab('Year') +
+  ylab('Number of Loans')
+
+# Now Grouped by Loan Status
+ggplot(prosper, aes(LoanOriginationDate.year)) +
+  geom_histogram(color = 'black', aes(fill = prosper$LoanStatus)) +
   ggtitle('Number of Loans by Year') +
   xlab('Year') +
   ylab('Number of Loans')
 
 
-# Number of Loans by Month
+# Histogram Showing the Growth of Number of Loans by Month
 months <- c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 prosper$LoanOriginationDate.month <- prosper$LoanOriginationDate %>%
@@ -63,23 +105,24 @@ prosper$LoanOriginationDate.month <- prosper$LoanOriginationDate %>%
 prosper$LoanOriginationDate.month <- factor(prosper$LoanOriginationDate.month,
                                             months)
 ggplot(prosper, aes(LoanOriginationDate.month)) +
-  geom_histogram(fill = '#007EE5') +
+  geom_histogram(color = 'black', fill = '#007EE5') +
   facet_wrap(~LoanOriginationDate.year) +
   ggtitle('Number of Loans by Month') +
   xlab('Month') +
   ylab('Number of Loans')
 
 
-# Number of Loans by Day of the Month
+# Number of Loans by Day of the Month, shows a cyclical pattern
 prosper$LoanOriginationDate.day <- prosper$LoanOriginationDate %>%
   format('%d')
 ggplot(prosper, aes(LoanOriginationDate.day)) +
-  geom_histogram(fill = '#00B488') +
+  geom_histogram(color = 'black', fill = '#00B488') +
   scale_x_discrete(breaks = seq(1, 31, 2)) +
   facet_wrap(~LoanOriginationDate.month) +
   ggtitle('Number of Loans by Day of the Month') +
   xlab('Day of the Month') +
   ylab('Number of Loans')
+
 
 # Number of Loans by State, Grouped by Term
 prosper$Term.f <- as.factor(prosper$Term)
@@ -92,18 +135,28 @@ ggplot(prosper, aes(BorrowerState)) +
 
 
 
-summary(prosper$CreditGrade)
-ggplot(subset(prosper, !is.na(CreditGrade)), aes(CreditGrade)) + 
-  geom_histogram()
-
-summary(prosper$LoanOriginalAmount)
+# Number of Loans by Loan Amount
 ggplot(prosper, aes(LoanOriginalAmount)) + 
   geom_histogram()
 
+# Number of Loans by Monthly Loan Payment
+ggplot(prosper, aes(MonthlyLoanPayment)) + 
+  geom_histogram(binwidth = 30)
+
+# Number of Loans by Monthly Loan Payment
+#ggplot(subset(prosper, !is.na(CreditScoreRangeLower)),
+#       aes(CreditScoreRangeLower)) +
+#  xlim(quantile(prosper$CreditScoreRangeLower, .01), 880) +
+#  geom_histogram(binwidth = 1)
+
+summary(prosper$CreditGrade)
+ggplot(subset(prosper, !is.na(CreditGrade)), aes(CreditGrade)) + 
+  geom_histogram(aes(fill = EmploymentStatus))
+
+
 summary(prosper$BorrowerRate)
 ggplot(prosper, aes(BorrowerRate)) + 
-  geom_histogram() +
-  facet_wrap(~EmploymentStatus)
+  geom_histogram(aes(fill = EmploymentStatus))
 
 # LoanStatus
 
@@ -113,11 +166,6 @@ ggplot(prosper, aes(StatedMonthlyIncome)) +
   geom_histogram()
 
 # EmploymentStatus
-
-summary(prosper$MonthlyLoanPayment)
-ggplot(prosper, aes(MonthlyLoanPayment)) + 
-  xlim(0, quantile(prosper$MonthlyLoanPayment, 0.99)) +
-  geom_histogram()
 
 ```
 

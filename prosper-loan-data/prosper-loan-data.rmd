@@ -82,15 +82,17 @@ prosper$LoanOriginationDate <- prosper$LoanOriginationDate %>%
 
 # Number of Loans by Year, Grouped by Loan Category
 prosper$LoanOriginationDate.year <-
-  prosper$LoanOriginationDate %>% format('%Y')
-ggplot(prosper, aes(LoanOriginationDate.year)) +
+  prosper$LoanOriginationDate %>%
+  format('%Y') %>%
+  strtoi()
+ggplot(prosper, aes(as.factor(LoanOriginationDate.year))) +
   geom_histogram(color = 'black', aes(fill = prosper$ListingCategory)) +
   ggtitle('Number of Loans by Year') +
   xlab('Year') +
   ylab('Number of Loans')
 
 # Now Grouped by Loan Status
-ggplot(prosper, aes(LoanOriginationDate.year)) +
+ggplot(prosper, aes(as.factor(LoanOriginationDate.year))) +
   geom_histogram(color = 'black', aes(fill = prosper$LoanStatus)) +
   ggtitle('Number of Loans by Year') +
   xlab('Year') +
@@ -114,8 +116,9 @@ ggplot(prosper, aes(LoanOriginationDate.month)) +
 
 # Number of Loans by Day of the Month, shows a cyclical pattern
 prosper$LoanOriginationDate.day <- prosper$LoanOriginationDate %>%
-  format('%d')
-ggplot(prosper, aes(LoanOriginationDate.day)) +
+  format('%d') %>%
+  strtoi()
+ggplot(prosper, aes(as.factor(LoanOriginationDate.day))) +
   geom_histogram(color = 'black', fill = '#00B488') +
   scale_x_discrete(breaks = seq(1, 31, 2)) +
   facet_wrap(~LoanOriginationDate.month) +
@@ -167,6 +170,11 @@ ggplot(prosper, aes(StatedMonthlyIncome)) +
 
 # EmploymentStatus
 
+# Boxplots of loan amounts for each credit grade
+ggplot(subset(prosper, !is.na(CreditGrade)),
+       aes(CreditGrade, LoanOriginalAmount)) +
+  geom_boxplot(aes(color = CreditGrade))
+
 ```
 
 # Univariate Analysis
@@ -204,21 +212,34 @@ ggplot(prosper, aes(LoanOriginationDate, LoanOriginalAmount, color = Term.f)) +
 
 
 # Amount Borrowed over Time w/ Mean Trendline
-prosper$age_with_months <- with(prosper, 2015 - LoanOriginationDate.year + (1 - LoanOriginationDate.year / 12))
+prosper$age_with_months <- with(prosper, 2015 - LoanOriginationDate.year + (1 - as.numeric(LoanOriginationDate.month) / 12))
+ggplot(prosper, aes(age_with_months)) +
+  geom_histogram()
 prosper.loan_amt_by_age_months <- prosper %>%
   group_by(age_with_months) %>%
-  summarize(friend_count_mean = mean(friend_count),
-            friend_count_median = median(friend_count),
+  summarize(loan_amt_mean = mean(LoanOriginalAmount),
+            loan_amt_median = median(LoanOriginalAmount),
             n = n()) %>%
   arrange(age_with_months)
+ggplot(prosper.loan_amt_by_age_months, aes(age_with_months, loan_amt_mean)) +
+  geom_line(stat = 'summary', fun.y = mean, linetype = 2)
 
-ggplot(prosper, aes(LoanOriginationDate, LoanOriginalAmount)) +
-  geom_point(alpha = 1/50, position = 'jitter') +
-  geom_line(stat = 'summary', fun.y = mean, color = '#00B488') +
+ggplot(prosper, aes(age_with_months, LoanOriginalAmount)) +
+  geom_point(alpha = 1/50, color = '#007EE5', position = 'jitter') +
+  geom_line(stat = 'summary', fun.y = mean) +
+  geom_line(stat = 'summary', fun.y = quantile, probs = .1,
+            linetype = 2, color = '#CC2127') +
+  geom_line(stat = 'summary', fun.y = quantile, probs = .5,
+            color = '#CC2127') +
+  geom_line(stat = 'summary', fun.y = quantile, probs = .9,
+            linetype = 2, color = '#CC2127') +
   ggtitle('Amount Borrowed Over Time') +
   xlab('Year') +
   ylab('Amount Borrowed ($USD)')
 
+
+
+# Loan amount vs number of investors
 ggplot(prosper, aes(LoanOriginalAmount, Investors)) +
   geom_point(alpha = 1/50,
              aes(color = prosper$Term.f),
@@ -256,7 +277,13 @@ ggplot(prosper, aes(LoanOriginalAmount, Investors)) +
 
 ### Plot One
 ```{r echo=FALSE, Plot_One}
-
+prosper$CreditGrade <-
+  factor(prosper$CreditGrade,
+         levels = c('AA', 'A', 'B', 'C', 'D', 'E', 'HR', 'NC', ''))
+ggplot(prosper, aes(StatedMonthlyIncome), binwidth = 250) +
+  geom_histogram() +
+  xlim(c(0,1000)) +
+  facet_wrap(~CreditGrade)
 ```
 
 ### Description One

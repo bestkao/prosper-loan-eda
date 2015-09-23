@@ -1,5 +1,11 @@
 ### Exploring Prosper Loan Data
 
+Today we're exploring Prosper's peer-to-peer lending data
+collected up until 03/11/2014. Prosper is the first
+peer-to-peer lending marketplace, and fortunately for us,
+they maintain a full public database of all loans where
+we can analyze the performance of any subset of loans.
+
 This data set contains 113,937 loans
 with 81 variables on each loan, including:
 - loan amount
@@ -11,7 +17,6 @@ with 81 variables on each loan, including:
 - the latest payment information
 among others.
 
-Data collected until 03/11/2014
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
@@ -28,7 +33,9 @@ library(dplyr)
 theme_set(theme_minimal(12))
 ```
 
-```{r echo=FALSE, Load_the_Data}
+Let's check out the data at a glance
+
+```{r Load_the_Data}
 # Load the Data
 setwd('~/Dropbox/Projects/da/eda/prosper-loan-data/')
 
@@ -39,7 +46,33 @@ str(prosper)
 defs <- read.csv('variable-definitions.csv')
 ```
 
-# Univariate Plots Section
+# Univariate Plots
+
+Here's a few plots to start off with
+
+```{r}
+# Histogram of Loans by Propser Rating
+prosper$ProsperRating <-
+  factor(prosper$ProsperRating..Alpha,
+         levels = c('AA', 'A', 'B', 'C', 'D', 'E', 'HR', 'NA'))
+ggplot(prosper, aes(ProsperRating)) +
+  geom_histogram(aes(fill = ProsperRating)) +
+  ggtitle('Number of Loans by Prosper Rating') +
+  xlab('Prosper Rating') +
+  ylab('Number of Loans')
+
+# Histogram of Amount Loaned by Propser Rating
+ggplot(prosper, aes(ProsperRating, LoanOriginalAmount)) +
+  geom_bar(stat='identity', aes(fill = ProsperRating)) +
+  ggtitle('Amount Loaned by Prosper Rating') +
+  xlab('Prosper Rating') +
+  ylab('Amount Loaned')
+```
+
+The number of loans by Prosper rating seems to be normally distributed, with a minor positive skew towards higher rated loans.
+
+Plotting the amount, rather than count of loans against the Prosper rating seems to emphasize this.
+
 ```{r echo=FALSE, Univariate_Plots}
 # Histogram of Investors Per Loan
 ggplot(prosper, aes(Investors)) +

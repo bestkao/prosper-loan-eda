@@ -50,7 +50,7 @@ defs <- read.csv('variable-definitions.csv')
 
 Here's a few plots to start off with
 
-```{r}
+```{r, Prosper Rating}
 # Histogram of Loans by Propser Rating
 prosper$ProsperRating <-
   factor(prosper$ProsperRating..Alpha,
@@ -73,24 +73,25 @@ The number of loans by Prosper rating seems to be normally distributed, with a m
 
 Plotting the amount, rather than count of loans against the Prosper rating seems to emphasize this.
 
-```{r echo=FALSE, Univariate_Plots}
+```{r, Investor}
 # Histogram of Investors Per Loan
+ggplot(prosper, aes(Investors)) +
+  geom_histogram(color = 'black', fill = '#007EE5') +
+  ggtitle('Number of Loans by Investor Count') +
+  xlab('Number of Investors') +
+  ylab('Number of Loans')
+
 ggplot(prosper, aes(Investors)) +
   scale_x_log10() +
   geom_histogram(color = 'black', fill = '#007EE5') +
   ggtitle('Number of Loans by Investor Count') +
   xlab('Number of Investors') +
   ylab('Number of Loans')
+```
 
+The number of investors per loan seem to be heavily positive skewed. Performing a log transformation to restore symmetry results in a much more normal distribution, indicating that there's really a lognormal distribution.
 
-# Histogram of Loans by Propser Rating
-ggplot(prosper, aes(prosper$ProsperRating..Alpha)) +
-  geom_histogram(aes(fill = prosper$ProsperRating..Alpha)) +
-  ggtitle('Number of Loans by Prosper Rating') +
-  xlab('Prosper Rating') +
-  ylab('Number of Loans')
-
-
+```{r, Category}
 # Histogram of Loan Terms by Year
 categories <- c('Not Available', 'Debt Consolidation', 'Home Improvement',
                 'Business', 'Personal Loan', 'Student Use', 'Auto', 'Other',
@@ -106,12 +107,14 @@ ggplot(prosper, aes(ListingCategory)) +
   ggtitle('Number of Loans by Category') +
   xlab('Category') +
   ylab('Number of Loans')
+```
 
+We see that the majority loans are debt consolidations, with small but significant amounts of home improvement and business loans.
 
+```{r, Year and Category}
 # Formatting dates
 prosper$LoanOriginationDate <- prosper$LoanOriginationDate %>%
   as.Date(format = '%Y-%m-%d')
-
 
 # Number of Loans by Year, Grouped by Loan Category
 prosper$LoanOriginationDate.year <-
@@ -123,15 +126,22 @@ ggplot(prosper, aes(as.factor(LoanOriginationDate.year))) +
   ggtitle('Number of Loans by Year') +
   xlab('Year') +
   ylab('Number of Loans')
+```
 
+Batching our categories of loans to their respective years, we see categories were only introduced in late 2007. There was a dip in loans offered in 2009 corresponding to their SEC relaunch, but there's been a growth of loan offerings ever since. The dip in 2014 reflects the fact that the data was collected up until 03/11/2014
+
+```{r, Loan Status}
 # Now Grouped by Loan Status
 ggplot(prosper, aes(as.factor(LoanOriginationDate.year))) +
   geom_histogram(color = 'black', aes(fill = prosper$LoanStatus)) +
   ggtitle('Number of Loans by Year') +
   xlab('Year') +
   ylab('Number of Loans')
+```
 
+Here we're using loan status instead of category. We see that default rates were significantly reduced after their 2009 relaunch. Current loans span from years 2011-2014. Keep this histogram doesn't display the distribution of loan-terms, since a recently created 36-month loan would still be placed in the current year's batch.
 
+```{r Month}
 # Histogram Showing the Growth of Number of Loans by Month
 months <- c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
@@ -145,8 +155,11 @@ ggplot(prosper, aes(LoanOriginationDate.month)) +
   ggtitle('Number of Loans by Month') +
   xlab('Month') +
   ylab('Number of Loans')
+```
 
+Taking a step back and visualizing the growth loan offerings month-by-month, we see once again the absence of loans during 2009, and the subsequent growth ever since.
 
+```{r Day}
 # Number of Loans by Day of the Month, shows a cyclical pattern
 prosper$LoanOriginationDate.day <- prosper$LoanOriginationDate %>%
   format('%d') %>%
@@ -158,8 +171,11 @@ ggplot(prosper, aes(as.factor(LoanOriginationDate.day))) +
   ggtitle('Number of Loans by Day of the Month') +
   xlab('Day of the Month') +
   ylab('Number of Loans')
+```
 
+Breaking it up further by day, lets note a cyclical pattern of loan offerings. There's a spike in offerings corresponding to end of fiscal quarters, and lack or absence of offerings during weekends and holidays.
 
+```{r Terms and State}
 # Number of Loans by State, Grouped by Term
 prosper$Term.f <- as.factor(prosper$Term)
 ggplot(prosper, aes(BorrowerState)) +
@@ -167,6 +183,21 @@ ggplot(prosper, aes(BorrowerState)) +
   ggtitle('Number of Loans by State') +
   xlab('State') +
   ylab('Number of Loans')
+```
+
+Recall we didn't get a chance to investigate the distribution of loans by loan terms yet. Here we perform a state-wide breakdown of loans offered by loan term. We see more loan offerings the more populous the state is. Most loan-terms are 36-month, with some 60-month, and a negligible amount of 12-month terms.
+
+```{r Prosper Rating Boxplots}
+# Boxplots of loan amounts by Prosper Rating
+ggplot(subset(prosper, !is.na(ProsperRating)),
+       aes(ProsperRating, LoanOriginalAmount)) +
+  geom_boxplot(aes(color = ProsperRating))
+```
+
+These boxplots confirm my intuition on that those with higher Prosper ratings qualify for higher loan amounts and thus tend to borrow more. Good luck if you have anything less than a C rating.
+
+
+```{r echo=FALSE, Univariate_Plots}
 
 
 
@@ -201,13 +232,6 @@ ggplot(prosper, aes(StatedMonthlyIncome)) +
   xlim(0, quantile(prosper$StatedMonthlyIncome, 0.99)) +
   geom_histogram()
 
-# EmploymentStatus
-
-# Boxplots of loan amounts for each credit grade
-ggplot(subset(prosper, !is.na(CreditGrade)),
-       aes(CreditGrade, LoanOriginalAmount)) +
-  geom_boxplot(aes(color = CreditGrade))
-
 ```
 
 # Univariate Analysis
@@ -226,22 +250,14 @@ ggplot(subset(prosper, !is.na(CreditGrade)),
 
 # Bivariate Plots Section
 ```{r echo=FALSE, Bivariate_Plots}
-# Borrowed Amount by Month, Faceted by Year
-ggplot(prosper, aes(LoanOriginationDate.month, LoanOriginalAmount)) +
-  geom_bar(stat = 'identity', fill = '#007EE5') +
-  facet_wrap(~LoanOriginationDate.year) +
-  ggtitle('Amount Borrowed by Month') +
-  xlab('Month') +
-  ylab('Amount Borrowed ($USD)')
-
-
 # Amount Borrowed over Time by Term
 prosper$Term.f <- as.factor(prosper$Term)
 ggplot(prosper, aes(LoanOriginationDate, LoanOriginalAmount, color = Term.f)) +
-  geom_point(alpha = 1/50, position = 'jitter') +
+  geom_point(alpha = 1/10, position = 'jitter') +
   ggtitle('Amount Borrowed Over Time') +
   xlab('Year') +
   ylab('Amount Borrowed ($USD)')
+# meh
 
 
 # Amount Borrowed over Time w/ Mean Trendline
@@ -271,12 +287,12 @@ ggplot(prosper, aes(age_with_months, LoanOriginalAmount)) +
   ylab('Amount Borrowed ($USD)')
 
 
-
 # Loan amount vs number of investors
 ggplot(prosper, aes(LoanOriginalAmount, Investors)) +
   geom_point(alpha = 1/50,
              aes(color = prosper$Term.f),
              position = 'jitter')
+# meh
 ```
 
 # Bivariate Analysis
